@@ -1,4 +1,4 @@
-package Player;
+package Tool;
 
 import javax.swing.*;
 import java.io.File;
