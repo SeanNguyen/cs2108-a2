@@ -6,16 +6,12 @@ import SignalProcess.Frames;
  * Created by workshop on 9/18/2015.
  */
 public class Energy {
-    public Energy(){
-
-    }
-
     /***
      * get the energy feature of the audio via its array of frames;
      * @param inputSignals the signal of audio;
      * @return the energy feature;
      */
-    public double[] getFeature(short[] inputSignals){
+    public static double[] getFeature(short[] inputSignals){
         Frames frames = new Frames(inputSignals);
         double[][] frameSignal = frames.frames;
         /**

@@ -1,5 +1,6 @@
 package Search;
 
+import Feature.Energy;
 import Feature.MagnitudeSpectrum;
 import Feature.ZeroCrossing;
 import SignalProcess.WaveIO;
@@ -23,6 +24,7 @@ public class SearchDemo {
 	protected final static String trainPath = "data\\input\\train\\";
     protected final static String magnitudeSpectrumDataFile = "magnitudeSpectrum.txt";
     protected final static String zeroCrossingDataFile = "zeroCrossing.txt";
+    protected final static String energyDataFile = "energy.txt";
     
     //Attributes
     private HashMap<String, AudioData> audioDataMap = new HashMap<>();
@@ -83,6 +85,7 @@ public class SearchDemo {
         //calculate data for all features
         calculateMagnitudeSpectrum(audioFiles, audioSignals);
         calculateZeroCrossing(audioFiles, audioSignals);
+        calculateEnergy(audioFiles, audioSignals);
     }
     
     /**
@@ -97,6 +100,7 @@ public class SearchDemo {
         //read all the features
     	readMagnitudeSpectrum();
     	readZeroCrossing();
+    	readEnergy();
     }
 
     private void readMagnitudeSpectrum() {
@@ -118,6 +122,34 @@ public class SearchDemo {
                 String fileName = split[0];
                 AudioData audioData = this.audioDataMap.get(fileName);
                 audioData.MagnitudeSpectrum = data;
+
+                line = br.readLine();
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    
+    private void readEnergy() {
+        try{
+            FileReader fr = new FileReader(SearchDemo.featureDataPath + SearchDemo.energyDataFile);
+            BufferedReader br = new BufferedReader(fr);
+
+            String line = br.readLine();
+            while(line != null){
+
+                String[] split = line.trim().split("\t");
+                if (split.length < 2)
+                    continue;
+                double[] data = new double[split.length - 1];
+                for (int i = 1; i < split.length; i ++){
+                    data[i-1] = Double.valueOf(split[i]);
+                }
+
+                String fileName = split[0];
+                AudioData audioData = this.audioDataMap.get(fileName);
+                audioData.Energy = data;
 
                 line = br.readLine();
             }
@@ -181,6 +213,25 @@ public class SearchDemo {
                 double zeroCrossingResult = ZeroCrossing.getFeature(audioSignals[i]);
                 String line = files[i].getName() + "\t" + zeroCrossingResult + "\t" + "\n";
                 fw.append(line);
+            }
+            fw.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    
+    private void calculateEnergy(File[] files, short[][] audioSignals) {
+    	System.out.println("Processing Feature: Energy");
+        
+        try {
+            FileWriter fw = new FileWriter(SearchDemo.featureDataPath + SearchDemo.energyDataFile);
+            for (int i = 0; i < audioSignals.length; i++) {
+                double[] msFeature = Energy.getFeature(audioSignals[i]);
+                String line = files[i].getName() + "\t";
+                for (double f: msFeature){
+                    line += f + "\t";
+                }
+                fw.append(line+"\n");
             }
             fw.close();
         }catch (Exception e){
