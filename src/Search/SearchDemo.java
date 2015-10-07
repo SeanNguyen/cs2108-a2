@@ -19,7 +19,10 @@ public class SearchDemo {
      * Please replace the 'trainPath' with the specific path of train set in your PC.
      */
     protected final static String trainPath = "D:/Developer/Java/AudioData/Environment_Sound/Environment Sound/";
-
+    
+    //Attributes
+    private HashMap<String, AudioData> AudioDataMap; 
+    
 
     /***
      * Get the feature of train set via the specific feature extraction method, and write it into offline file for efficiency;
@@ -149,13 +152,5 @@ public class SearchDemo {
         }
 
         return fList;
-    }
-
-    public static void main(String[] args){
-        SearchDemo searchDemo = new SearchDemo();
-        /**
-         * Example of searching, selecting 'bus2.wav' as query;
-         */
-        searchDemo.resultList("data/input/test/bus2.wav");
     }
 }

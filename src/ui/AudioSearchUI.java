@@ -25,7 +25,7 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     JFileChooser fileChooser;
 
     //
-    File queryAudio = null;
+    File queryAudioFile = null;
     int resultSize = 20;
     /**
      * If need, please replace the 'querySet' with specific path of test set of audio files in your PC.
@@ -44,7 +44,7 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     // Constructor
     public AudioSearchUI() {
     	// Pre-load all the sound files
-        queryAudio = null;
+        queryAudioFile = null;
         SoundEffect.volume = SoundEffect.Volume.LOW;  // un-mute
     }
 
@@ -60,18 +60,18 @@ public class AudioSearchUI extends JFrame implements ActionListener {
             int returnVal = fileChooser.showOpenDialog(AudioSearchUI.this);
 
             if (returnVal == JFileChooser.APPROVE_OPTION){
-                queryAudio = fileChooser.getSelectedFile();
+                queryAudioFile = fileChooser.getSelectedFile();
             }
 
             fileChooser.setSelectedFile(null);
 
-            queryButton.setText(queryAudio.getName());
+            queryButton.setText(queryAudioFile.getName());
 
             fileChooser.setSelectedFile(null);
 
         }else if (e.getSource() == searchButton){
             SearchDemo searchDemo = new SearchDemo();
-            resultFiles = searchDemo.resultList(queryAudio.getAbsolutePath());
+            resultFiles = searchDemo.resultList(queryAudioFile.getAbsolutePath());
 
             for (int i = 0; i < resultFiles.size(); i ++){
                 resultLabels[i].setText(resultFiles.get(i));
@@ -80,7 +80,7 @@ public class AudioSearchUI extends JFrame implements ActionListener {
             }
 
         }else if (e.getSource() == queryButton){
-            new SoundEffect(queryAudio.getAbsolutePath()).play();
+            new SoundEffect(queryAudioFile.getAbsolutePath()).play();
         }else {
             for (int i = 0; i < resultSize; i ++){
                 if (e.getSource() == resultButton[i]){
