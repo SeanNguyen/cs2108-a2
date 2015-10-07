@@ -19,12 +19,7 @@ import Player.SoundEffect;
 import Search.SearchDemo;
 
 public class AudioSearchUI extends JFrame implements ActionListener {
-	//UI Components
-	JPanel contentPane;
-    JButton openButton, searchButton, queryButton;
-    JFileChooser fileChooser;
-
-    //
+    //attributes
     File queryAudioFile = null;
     int resultSize = 20;
     /**
@@ -35,11 +30,16 @@ public class AudioSearchUI extends JFrame implements ActionListener {
      * Please Replace the 'basePath' with specific path of train set of audio files in your PC.
      */
     String basePath = "./";
-
-
+    ArrayList<String> resultFiles = new ArrayList<String>();
+    
+    SearchDemo searchDemo = new SearchDemo();
+    
+	//UI Components
+	JPanel contentPane;
+    JButton openButton, searchButton, queryButton;
+    JFileChooser fileChooser;
     JButton[] resultButton = new JButton[resultSize];
     JLabel [] resultLabels = new JLabel[resultSize];
-    ArrayList<String> resultFiles = new ArrayList<String>();
 
     // Constructor
     public AudioSearchUI() {
@@ -70,7 +70,6 @@ public class AudioSearchUI extends JFrame implements ActionListener {
             fileChooser.setSelectedFile(null);
 
         }else if (e.getSource() == searchButton){
-            SearchDemo searchDemo = new SearchDemo();
             resultFiles = searchDemo.resultList(queryAudioFile.getAbsolutePath());
 
             for (int i = 0; i < resultFiles.size(); i ++){

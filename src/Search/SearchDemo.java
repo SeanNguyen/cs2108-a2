@@ -18,64 +18,34 @@ public class SearchDemo {
     /**
      * Please replace the 'trainPath' with the specific path of train set in your PC.
      */
-    protected final static String trainPath = "D:/Developer/Java/AudioData/Environment_Sound/Environment Sound/";
+	protected final static String featureDataPath = "data\\feature";
+	protected final static String trainPath = "data\\input\\train";
+    protected final static String magnitudeSpectrumDataFile = "magnitudeSpectrum.txt";
     
     //Attributes
-    private HashMap<String, AudioData> AudioDataMap; 
+    private HashMap<String, AudioData> audioDataMap = new HashMap<>();
     
-
+    public SearchDemo() {
+    	//Process all the audio files here
+    	trainFeatureList();
+    	//then read them
+    	readFeature();
+    }
+    
     /***
      * Get the feature of train set via the specific feature extraction method, and write it into offline file for efficiency;
      * Please modify this function, select or combine the methods (in the Package named 'Feature') to extract feature, such as Zero-Crossing, Energy, Magnitude-
      * Spectrum and MFCC by yourself.
      * @return the map of training features, Key is the name of file, Value is the array/vector of features.
      */
-    public HashMap<String,double[]> trainFeatureList(){
+     public void trainFeatureList(){
         File trainFolder = new File(trainPath);
-        File[] trainList = trainFolder.listFiles();
-
-        HashMap<String, double[]> featureList = new HashMap<>();
-        try {
-
-            FileWriter fw = new FileWriter("data/feature/allFeature.txt");
-
-            for (int i = 0; i < trainList.length; i++) {
-                WaveIO waveIO = new WaveIO();
-                short[] signal = waveIO.readWave(trainList[i].getAbsolutePath());
-
-                /**
-                 * Example of extracting feature via MagnitudeSpectrum, modify it by yourself.
-                 */
-                MagnitudeSpectrum ms = new MagnitudeSpectrum();
-                double[] msFeature = ms.getFeature(signal);
-
-                /**
-                 * Write the extracted feature into offline file;
-                 */
-                featureList.put(trainList[i].getName(), msFeature);
-
-                String line = trainList[i].getName() + "\t";
-                for (double f: msFeature){
-                    line += f + "\t";
-                }
-
-                fw.append(line+"\n");
-
-                System.out.println("@=========@" + i);
-            }
-            fw.close();
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-        try {
-
-
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-
-
-        return featureList;
+        File[] audioFiles = trainFolder.listFiles();
+        
+        //load all the audio files
+        short[][] audioSignals = getSignalFromAudioFiles(audioFiles);
+        //calculate data for all features
+        calculateMagnitudeSpectrum(audioFiles, audioSignals);
     }
 
     /***
@@ -98,37 +68,34 @@ public class SearchDemo {
          */
         Cosine cosine = new Cosine();
 
-        /**
-         * Load the offline file of features (the result of function 'trainFeatureList()'), modify it by yourself please;
-         */
-        HashMap<String, double[]> trainFeatureList = readFeature("data/feature/allFeature.txt");
-
 //        System.out.println(trainFeatureList.size() + "=====");
-        for (Map.Entry f: trainFeatureList.entrySet()){
-            simList.put((String)f.getKey(), cosine.getDistance(msFeature1, (double[]) f.getValue()));
-        }
-
-        SortHashMapByValue sortHM = new SortHashMapByValue(20);
-        ArrayList<String> result = sortHM.sort(simList);
-
-        String out = query + ":";
-        for(int j = 0; j < result.size(); j++){
-            out += "\t" + result.get(j);
-        }
-
-        System.out.println(out);
-        return result;
+//        for (Map.Entry f: trainFeatureList.entrySet()){
+//            simList.put((String)f.getKey(), cosine.getDistance(msFeature1, (double[]) f.getValue()));
+//        }
+//
+//        SortHashMapByValue sortHM = new SortHashMapByValue(20);
+//        ArrayList<String> result = sortHM.sort(simList);
+        
+        return new ArrayList<>();
     }
 
+    //private helper methods
     /**
      * Load the offline file of features (the result of function 'trainFeatureList()');
      * @param featurePath the path of offline file including the features of training set.
      * @return the map of training features, Key is the name of file, Value is the array/vector of features.
      */
-    private HashMap<String, double[]> readFeature(String featurePath){
-        HashMap<String, double[]> fList = new HashMap<>();
+    private void readFeature(){
+    	//prepare all the audioData instances
+    	initializeAudioDataMap();
+        
+        //read all the features
+    	readMagnitudeSpectrum();
+    }
+
+    private void readMagnitudeSpectrum() {
         try{
-            FileReader fr = new FileReader(featurePath);
+            FileReader fr = new FileReader(SearchDemo.featureDataPath + SearchDemo.magnitudeSpectrumDataFile);
             BufferedReader br = new BufferedReader(fr);
 
             String line = br.readLine();
@@ -137,12 +104,14 @@ public class SearchDemo {
                 String[] split = line.trim().split("\t");
                 if (split.length < 2)
                     continue;
-                double[] fs = new double[split.length - 1];
+                double[] data = new double[split.length - 1];
                 for (int i = 1; i < split.length; i ++){
-                    fs[i-1] = Double.valueOf(split[i]);
+                    data[i-1] = Double.valueOf(split[i]);
                 }
 
-                fList.put(split[0], fs);
+                String fileName = split[0];
+                AudioData audioData = this.audioDataMap.get(fileName);
+                audioData.MagnitudeSpectrum = data;
 
                 line = br.readLine();
             }
@@ -150,7 +119,46 @@ public class SearchDemo {
         }catch (Exception e){
             e.printStackTrace();
         }
+    }
+    
+    private void calculateMagnitudeSpectrum(File[] files, short[][] audioSignals) {
+    	System.out.println("Processing Feature: Magnitude Spectrum");
+        
+        try {
+            FileWriter fw = new FileWriter(SearchDemo.featureDataPath + SearchDemo.magnitudeSpectrumDataFile);
+            for (int i = 0; i < audioSignals.length; i++) {
+                MagnitudeSpectrum ms = new MagnitudeSpectrum();
+                double[] msFeature = ms.getFeature(audioSignals[i]);
+                String line = files[i].getName() + "\t";
+                for (double f: msFeature){
+                    line += f + "\t";
+                }
+                fw.append(line+"\n");
+                System.out.println(">>" + files[i].getName());
+            }
+            fw.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
 
-        return fList;
+    private void initializeAudioDataMap() {
+    	File trainFolder = new File(trainPath);
+        File[] audioFiles = trainFolder.listFiles();
+        for (File file : audioFiles) {
+        	AudioData audioData = new AudioData();
+        	audioData.Path = file.getAbsolutePath();
+			this.audioDataMap.put(file.getName(), new AudioData());
+		}
+    }
+
+    private short[][] getSignalFromAudioFiles(File[] audioFiles) {
+    	short[][] audioSignals = new short[audioFiles.length][];
+        for (int i = 0; i < audioFiles.length; i++) {
+            WaveIO waveIO = new WaveIO();
+            short[] signal = waveIO.readWave(audioFiles[i].getAbsolutePath());
+            audioSignals[i] = signal;
+        }
+        return audioSignals;
     }
 }
