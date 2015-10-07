@@ -1,6 +1,7 @@
 package Search;
 
 import Feature.MagnitudeSpectrum;
+import Feature.ZeroCrossing;
 import SignalProcess.WaveIO;
 import Distance.Cosine;
 import Tool.SortHashMapByValue;
@@ -18,36 +19,23 @@ public class SearchDemo {
     /**
      * Please replace the 'trainPath' with the specific path of train set in your PC.
      */
-	protected final static String featureDataPath = "data\\feature";
-	protected final static String trainPath = "data\\input\\train";
+	protected final static String featureDataPath = "data\\feature\\";
+	protected final static String trainPath = "data\\input\\train\\";
     protected final static String magnitudeSpectrumDataFile = "magnitudeSpectrum.txt";
+    protected final static String zeroCrossingDataFile = "zeroCrossing.txt";
     
     //Attributes
     private HashMap<String, AudioData> audioDataMap = new HashMap<>();
     
+    //Constructor
     public SearchDemo() {
     	//Process all the audio files here
     	trainFeatureList();
     	//then read them
     	readFeature();
     }
-    
-    /***
-     * Get the feature of train set via the specific feature extraction method, and write it into offline file for efficiency;
-     * Please modify this function, select or combine the methods (in the Package named 'Feature') to extract feature, such as Zero-Crossing, Energy, Magnitude-
-     * Spectrum and MFCC by yourself.
-     * @return the map of training features, Key is the name of file, Value is the array/vector of features.
-     */
-     public void trainFeatureList(){
-        File trainFolder = new File(trainPath);
-        File[] audioFiles = trainFolder.listFiles();
-        
-        //load all the audio files
-        short[][] audioSignals = getSignalFromAudioFiles(audioFiles);
-        //calculate data for all features
-        calculateMagnitudeSpectrum(audioFiles, audioSignals);
-    }
 
+    //Public methods
     /***
      * Get the distances between features of the selected query audio and ones of the train set;
      * Please modify this function, select or combine the suitable and feasible methods (in the package named 'Distance') to calculate the distance,
@@ -80,6 +68,23 @@ public class SearchDemo {
     }
 
     //private helper methods
+    /***
+     * Get the feature of train set via the specific feature extraction method, and write it into offline file for efficiency;
+     * Please modify this function, select or combine the methods (in the Package named 'Feature') to extract feature, such as Zero-Crossing, Energy, Magnitude-
+     * Spectrum and MFCC by yourself.
+     * @return the map of training features, Key is the name of file, Value is the array/vector of features.
+     */
+     private void trainFeatureList(){
+        File trainFolder = new File(trainPath);
+        File[] audioFiles = trainFolder.listFiles();
+        
+        //load all the audio files
+        short[][] audioSignals = getSignalFromAudioFiles(audioFiles);
+        //calculate data for all features
+        calculateMagnitudeSpectrum(audioFiles, audioSignals);
+        calculateZeroCrossing(audioFiles, audioSignals);
+    }
+    
     /**
      * Load the offline file of features (the result of function 'trainFeatureList()');
      * @param featurePath the path of offline file including the features of training set.
@@ -91,6 +96,7 @@ public class SearchDemo {
         
         //read all the features
     	readMagnitudeSpectrum();
+    	readZeroCrossing();
     }
 
     private void readMagnitudeSpectrum() {
@@ -121,6 +127,30 @@ public class SearchDemo {
         }
     }
     
+    private void readZeroCrossing() {
+        try{
+            FileReader fr = new FileReader(SearchDemo.featureDataPath + SearchDemo.zeroCrossingDataFile);
+            BufferedReader br = new BufferedReader(fr);
+
+            String line = br.readLine();
+            while(line != null){
+                String[] split = line.trim().split("\t");
+                if (split.length < 2)
+                    continue;
+                
+                String fileName = split[0];
+                double ZeroCrossingValue = Double.parseDouble(split[1]); 
+                AudioData audioData = this.audioDataMap.get(fileName);
+                audioData.ZeroCrossing = ZeroCrossingValue;
+
+                line = br.readLine();
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    
     private void calculateMagnitudeSpectrum(File[] files, short[][] audioSignals) {
     	System.out.println("Processing Feature: Magnitude Spectrum");
         
@@ -141,7 +171,23 @@ public class SearchDemo {
             e.printStackTrace();
         }
     }
-
+    
+    private void calculateZeroCrossing(File[] files, short[][] audioSignals) {
+    	System.out.println("Processing Feature: Zero Crossing");
+        
+        try {
+            FileWriter fw = new FileWriter(SearchDemo.featureDataPath + SearchDemo.zeroCrossingDataFile);
+            for (int i = 0; i < audioSignals.length; i++) {
+                double zeroCrossingResult = ZeroCrossing.getFeature(audioSignals[i]);
+                String line = files[i].getName() + "\t" + zeroCrossingResult + "\t" + "\n";
+                fw.append(line);
+            }
+            fw.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    
     private void initializeAudioDataMap() {
     	File trainFolder = new File(trainPath);
         File[] audioFiles = trainFolder.listFiles();
