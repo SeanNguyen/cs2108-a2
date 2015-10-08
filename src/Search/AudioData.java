@@ -5,4 +5,5 @@ public class AudioData {
 	double[] MagnitudeSpectrum;
 	double[] Energy;
 	double ZeroCrossing;
+	double[][] MFCC;
 }

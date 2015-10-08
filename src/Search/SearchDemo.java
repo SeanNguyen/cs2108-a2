@@ -1,6 +1,7 @@
 package Search;
 
 import Feature.Energy;
+import Feature.MFCC;
 import Feature.MagnitudeSpectrum;
 import Feature.ZeroCrossing;
 import SignalProcess.WaveIO;
@@ -25,6 +26,7 @@ public class SearchDemo {
     protected final static String magnitudeSpectrumDataFile = "magnitudeSpectrum.txt";
     protected final static String zeroCrossingDataFile = "zeroCrossing.txt";
     protected final static String energyDataFile = "energy.txt";
+    protected final static String mfccDataFile = "mfcc.txt";
     
     //Attributes
     private HashMap<String, AudioData> audioDataMap = new HashMap<>();
@@ -86,6 +88,7 @@ public class SearchDemo {
         calculateMagnitudeSpectrum(audioFiles, audioSignals);
         calculateZeroCrossing(audioFiles, audioSignals);
         calculateEnergy(audioFiles, audioSignals);
+        calculateMFCC(audioFiles, audioSignals);
     }
     
     /**
@@ -101,6 +104,7 @@ public class SearchDemo {
     	readMagnitudeSpectrum();
     	readZeroCrossing();
     	readEnergy();
+    	readMFCC();
     }
 
     private void readMagnitudeSpectrum() {
@@ -150,6 +154,42 @@ public class SearchDemo {
                 String fileName = split[0];
                 AudioData audioData = this.audioDataMap.get(fileName);
                 audioData.Energy = data;
+
+                line = br.readLine();
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    
+    private void readMFCC() {
+        try{
+            FileReader fr = new FileReader(SearchDemo.featureDataPath + SearchDemo.mfccDataFile);
+            BufferedReader br = new BufferedReader(fr);
+
+            String line = br.readLine();
+            while(line != null){
+
+                String[] split = line.trim().split("\t");
+                if (split.length < 2)
+                    continue;
+                
+                int rowNumber = Integer.parseInt(split[1]);
+                double[][] data = new double[rowNumber][];
+                for (int i = 0; i < data.length; i ++){
+                	String rowLine = br.readLine();
+                	String[] rowLineArray = rowLine.split("\t");
+                	double[] row = new double[rowLineArray.length];
+                	for (int j = 0; j < rowLineArray.length; j++) {
+                		row[j] = Double.parseDouble(rowLineArray[j]);
+					}
+                	data[i] = row;
+                }
+
+                String fileName = split[0];
+                AudioData audioData = this.audioDataMap.get(fileName);
+                audioData.MFCC = data;
 
                 line = br.readLine();
             }
@@ -232,6 +272,30 @@ public class SearchDemo {
                     line += f + "\t";
                 }
                 fw.append(line+"\n");
+            }
+            fw.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    
+    private void calculateMFCC(File[] files, short[][] audioSignals) {
+    	System.out.println("Processing Feature: MFCC");
+        
+        try {
+            FileWriter fw = new FileWriter(SearchDemo.featureDataPath + SearchDemo.mfccDataFile);
+            for (int i = 0; i < audioSignals.length; i++) {
+            	MFCC mfcc = new MFCC();
+                double[][] mfccData = mfcc.process(audioSignals[i]);
+                String line = files[i].getName() + "\t" + mfccData.length + "\n";
+                for (double[] mfccDataRow: mfccData){
+                	for (double mfccDataEntry : mfccDataRow) {
+                		line += mfccDataEntry + "\t";
+					}
+                	line += "\n";
+                }
+                fw.append(line);
+                System.out.println(">>" + files[i].getName());
             }
             fw.close();
         }catch (Exception e){
