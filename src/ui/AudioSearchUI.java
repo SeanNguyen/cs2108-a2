@@ -1,6 +1,7 @@
 package ui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.LayoutManager;
@@ -59,6 +60,7 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     
     JButton[] resultButton = new JButton[resultSize];
     JLabel [] resultLabels = new JLabel[resultSize];
+    JCheckBox[] resultCheckboxes = new JCheckBox[resultSize];
 
     // Constructor
     public AudioSearchUI() {
@@ -139,26 +141,29 @@ public class AudioSearchUI extends JFrame implements ActionListener {
         topPanel.add(featureOptionPanel);
         
         //result panel
-        JPanel resultPanel = new JPanel();
-        resultPanel.setLayout(new GridLayout(0, 4, 60, 60));
+        JPanel resultPanel = new JPanel((LayoutManager) new FlowLayout(FlowLayout.LEFT));
+        resultPanel.setLayout(new GridLayout(0, 3, 5, 5));
 
         for (int i = 0; i < resultLabels.length; i ++){
             resultLabels[i] = new JLabel();
 
+            resultCheckboxes[i] = new JCheckBox("(relevant)");
+            resultCheckboxes[i].setVisible(false);
+            
             resultButton[i] = new JButton(resultLabels[i].getText());
-
             resultButton[i].addActionListener(this);
-
             resultButton[i].setVisible(false);
+            
             resultPanel.add(resultLabels[i]);
             resultPanel.add(resultButton[i]);
+            resultPanel.add(resultCheckboxes[i]);
         }
 
 
         resultPanel.setBorder(BorderFactory.createEmptyBorder(30,16,10,16));
 
         contentPane = (JPanel)this.getContentPane();
-        setSize(800,1000);
+        setSize(600, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         contentPane.add(topPanel, BorderLayout.PAGE_START);
@@ -221,7 +226,8 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     	resultFiles = searchDemo.retrieveResultList(queryAudioFile.getName(), distanceMethod, analyzedFeatures);
 
         for (int i = 0; i < resultFiles.size(); i ++){
-            resultLabels[i].setText(resultFiles.get(i).Name);
+            resultLabels[i].setText(i + 1 + ". " + resultFiles.get(i).Name);
+            resultCheckboxes[i].setVisible(true);
             resultButton[i].setText("Play");
             resultButton[i].setVisible(true);
         }
