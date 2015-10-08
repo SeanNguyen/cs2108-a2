@@ -24,6 +24,14 @@ public class Utils {
     	String category = fileName.replaceAll("\\d","");
     	return category;
     }
+    
+    public static boolean isFileExist(String path) {
+    	File f = new File(path);
+    	if(f.exists() && !f.isDirectory()) { 
+    	    return true;
+    	}
+    	return false;
+    }
 
     /** Returns an ImageIcon, or null if the path was invalid. */
     protected static ImageIcon createAudioIcon(String path) {

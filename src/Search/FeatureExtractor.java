@@ -39,10 +39,18 @@ public class FeatureExtractor {
 		// load all the audio files
 		short[][] audioSignals = getSignalFromAudioFiles(audioFiles);
 		// calculate data for all features
-		calculateMagnitudeSpectrum(audioFiles, audioSignals);
-		calculateZeroCrossing(audioFiles, audioSignals);
-		calculateEnergy(audioFiles, audioSignals);
-		calculateMFCC(audioFiles, audioSignals);
+		if(!Utils.isFileExist(featureDataPath + magnitudeSpectrumDataFile)) {
+			calculateMagnitudeSpectrum(audioFiles, audioSignals);
+		}
+		if(!Utils.isFileExist(featureDataPath + zeroCrossingDataFile)) {
+			calculateZeroCrossing(audioFiles, audioSignals);
+		}
+		if(!Utils.isFileExist(featureDataPath + energyDataFile)) {
+			calculateEnergy(audioFiles, audioSignals);
+		}
+		if(!Utils.isFileExist(featureDataPath + mfccDataFile)) {
+			calculateMFCC(audioFiles, audioSignals);
+		}
 	}
 
 	/**
@@ -281,6 +289,7 @@ public class FeatureExtractor {
 		for (File file : audioFiles) {
 			AudioData audioData = new AudioData();
 			audioData.Path = file.getAbsolutePath();
+			audioData.Name = file.getName();
 			audioDataMap.put(file.getName(), audioData);
 			
 			//plus 1 to its category

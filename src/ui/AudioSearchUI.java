@@ -24,6 +24,8 @@ import javax.swing.JTextPane;
 
 import Player.AudioFilter;
 import Player.SoundEffect;
+import Search.AudioData;
+import Search.FeatureExtractor;
 import Search.SearchEngine;
 
 public class AudioSearchUI extends JFrame implements ActionListener {
@@ -37,8 +39,7 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     /**
      * Please Replace the 'basePath' with specific path of train set of audio files in your PC.
      */
-    String basePath = "./";
-    ArrayList<String> resultFiles = new ArrayList<String>();
+    ArrayList<AudioData> resultFiles = new ArrayList<>();
     
     SearchEngine searchDemo = new SearchEngine();
     
@@ -109,6 +110,7 @@ public class AudioSearchUI extends JFrame implements ActionListener {
         distanceOptionButtonGroup.add(this.distanceCityBlockRadioButton);
         distanceOptionButtonGroup.add(this.distanceCosineRadioButton);
         distanceOptionButtonGroup.add(this.distanceEuclideanRadioButton);
+        this.distanceCosineRadioButton.setSelected(true);
         
         JPanel distanceOptionPanel = new JPanel((LayoutManager) new FlowLayout(FlowLayout.LEFT));
         distanceOptionPanel.add(distanceOptionLabel);
@@ -188,6 +190,9 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     }
     
     private void search() {
+    	//check if a file is chosen
+    	if(queryAudioFile == null)
+    		return;
     	//prepare query
     	SearchEngine.DistanceMethod distanceMethod;
     	if(this.distanceCityBlockRadioButton.isSelected()) {
@@ -216,8 +221,8 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     	resultFiles = searchDemo.retrieveResultList(queryAudioFile.getName(), distanceMethod, analyzedFeatures);
 
         for (int i = 0; i < resultFiles.size(); i ++){
-            resultLabels[i].setText(resultFiles.get(i));
-            resultButton[i].setText(resultFiles.get(i));
+            resultLabels[i].setText(resultFiles.get(i).Name);
+            resultButton[i].setText("Play");
             resultButton[i].setVisible(true);
         }
     }
@@ -230,7 +235,7 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     private void playResultAudio(ActionEvent e) {
     	for (int i = 0; i < resultSize; i ++){
             if (e.getSource() == resultButton[i]){
-                String filePath = basePath+resultFiles.get(i);
+                String filePath = resultFiles.get(i).Path;
                 new SoundEffect(filePath).play();
                 break;
             }

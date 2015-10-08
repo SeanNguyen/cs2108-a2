@@ -50,7 +50,7 @@ public class SearchEngine {
      * @param query the selected query audio file;
      * @return the top 20 similar audio files;
      */
-    public ArrayList<String> retrieveResultList(String query, DistanceMethod distanceMethod, Vector<AnalyzedFeature> analyzedFeatures){
+    public ArrayList<AudioData> retrieveResultList(String query, DistanceMethod distanceMethod, Vector<AnalyzedFeature> analyzedFeatures){
     	//Assume the query only come from the train/test folder
     	AudioData queryAudioData = this.audioDataMap.get(query);
     	
@@ -88,7 +88,13 @@ public class SearchEngine {
         String category = Tool.Utils.getCategoryFromFileName(query);
         System.out.println("Recall: " + Recall.analyze(query, result, this.categoryCount.get(category)));
         
-        return result;
+        ArrayList<AudioData> resultData = new ArrayList<>();
+        for (String itemName : result) {
+        	AudioData audioData = this.audioDataMap.get(itemName);
+			resultData.add(audioData);
+		}
+        
+        return resultData;
     }
     
    //private helper methods
