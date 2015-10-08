@@ -49,7 +49,7 @@ public class FeatureExtractor {
 			calculateEnergy(audioFiles, audioSignals);
 		}
 		if(!Utils.isFileExist(featureDataPath + mfccDataFile)) {
-			calculateMFCC(audioFiles, audioSignals);
+//			calculateMFCC(audioFiles, audioSignals);
 		}
 	}
 
@@ -71,7 +71,7 @@ public class FeatureExtractor {
 		readMagnitudeSpectrum(audioDataMap);
 		readZeroCrossing(audioDataMap);
 		readEnergy(audioDataMap);
-		readMFCC(audioDataMap);
+//		readMFCC(audioDataMap);
 	}
 
 	// private helper methods

@@ -28,6 +28,8 @@ import Player.SoundEffect;
 import Search.AudioData;
 import Search.FeatureExtractor;
 import Search.SearchEngine;
+import Search.SearchEngine.AnalyzedFeature;
+import Search.SearchEngine.DistanceMethod;
 
 public class AudioSearchUI extends JFrame implements ActionListener {
     //attributes
@@ -40,9 +42,9 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     /**
      * Please Replace the 'basePath' with specific path of train set of audio files in your PC.
      */
-    ArrayList<AudioData> resultFiles = new ArrayList<>();
+    ArrayList<AudioData> resultItems = new ArrayList<>();
     
-    SearchEngine searchDemo = new SearchEngine();
+    SearchEngine searchEngine = new SearchEngine();
     
 	//UI Components
 	JPanel contentPane;
@@ -199,15 +201,62 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     	if(queryAudioFile == null)
     		return;
     	//prepare query
-    	SearchEngine.DistanceMethod distanceMethod;
-    	if(this.distanceCityBlockRadioButton.isSelected()) {
-    		distanceMethod = SearchEngine.DistanceMethod.CityBlock;
-    	} else if(this.distanceCosineRadioButton.isSelected()) {
-        	distanceMethod = SearchEngine.DistanceMethod.Cosine;
-    	} else {
-    		distanceMethod = SearchEngine.DistanceMethod.Euclidean;
-    	}
+    	ArrayList<AudioData> relevantFeedbackItems = getRelevantFeedbackItems();
+    	resetRelevantFeedbackCheckboxes();
+    	SearchEngine.DistanceMethod distanceMethod = getQueryDistanceMethod();
+    	Vector<SearchEngine.AnalyzedFeature> analyzedFeatures = getQyeryAnalyzeFeatures();
+        
+    	//query
+    	resultItems = searchEngine.retrieveResultList(queryAudioFile.getName(), distanceMethod, analyzedFeatures);
     	
+    	//process relevant feedback if have
+    	ArrayList< ArrayList<AudioData> > additionalResults = getResultsFromFeedbackItems(relevantFeedbackItems, distanceMethod, analyzedFeatures);
+    	if(!additionalResults.isEmpty()) {
+			this.resultItems = getFinalResultFromFeedbackResult(relevantFeedbackItems, additionalResults);
+    	}
+
+        for (int i = 0; i < resultItems.size(); i ++){
+            resultLabels[i].setText(i + 1 + ". " + resultItems.get(i).Name);
+            resultCheckboxes[i].setVisible(true);
+            resultButton[i].setText("Play");
+            resultButton[i].setVisible(true);
+        }
+    }
+    
+    private ArrayList<AudioData> getFinalResultFromFeedbackResult(ArrayList<AudioData> relevantFeedbackItems, 
+    		ArrayList< ArrayList<AudioData> > feedbackResults) {
+    	ArrayList<AudioData> combinedResults = new ArrayList<>();
+		//add all feed back to the result
+		for (AudioData feedbackItem : relevantFeedbackItems) {
+			combinedResults.add(feedbackItem);
+		}
+		
+		feedbackResults.add(this.resultItems);
+		int[] currentPickingPositions = new int[feedbackResults.size()]; 
+		int index = 0;
+		while(combinedResults.size() < this.resultSize) {
+			ArrayList<AudioData> chosenResultList = feedbackResults.get(index);
+			AudioData audioItem = chosenResultList.get(currentPickingPositions[index]);
+			if(!isItemInResultList(combinedResults, audioItem)) {
+				combinedResults.add(audioItem);
+			}
+			currentPickingPositions[index]++;
+			index = (index + 1) % feedbackResults.size();
+		}
+		return combinedResults;
+    }
+    
+    private ArrayList< ArrayList<AudioData> > getResultsFromFeedbackItems(ArrayList<AudioData> feedbackItems, 
+    		DistanceMethod distanceMethod, Vector<AnalyzedFeature> analyzedFeatures) {
+    	ArrayList< ArrayList<AudioData> > results = new ArrayList<>();
+    	for (AudioData relevantFeedbackItem : feedbackItems) {
+			ArrayList<AudioData> additionalResults = searchEngine.retrieveResultList(relevantFeedbackItem.Name, distanceMethod, analyzedFeatures);
+			results.add(additionalResults);
+		}
+    	return results;
+    }
+    
+    private Vector<SearchEngine.AnalyzedFeature> getQyeryAnalyzeFeatures() {
     	Vector<SearchEngine.AnalyzedFeature> analyzedFeatures = new Vector<>();
     	if(this.featureEnergyCheckbox.isSelected()) {
     		analyzedFeatures.addElement(SearchEngine.AnalyzedFeature.Energy);
@@ -221,16 +270,35 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     	if(this.featureZeroCrossingCheckbox.isSelected()) {
     		analyzedFeatures.addElement(SearchEngine.AnalyzedFeature.ZeroCrossing);
     	}
-        
-    	//query
-    	resultFiles = searchDemo.retrieveResultList(queryAudioFile.getName(), distanceMethod, analyzedFeatures);
-
-        for (int i = 0; i < resultFiles.size(); i ++){
-            resultLabels[i].setText(i + 1 + ". " + resultFiles.get(i).Name);
-            resultCheckboxes[i].setVisible(true);
-            resultButton[i].setText("Play");
-            resultButton[i].setVisible(true);
-        }
+    	return analyzedFeatures;
+    }
+    
+    private SearchEngine.DistanceMethod getQueryDistanceMethod() {
+    	SearchEngine.DistanceMethod distanceMethod;
+    	if(this.distanceCityBlockRadioButton.isSelected()) {
+    		distanceMethod = SearchEngine.DistanceMethod.CityBlock;
+    	} else if(this.distanceCosineRadioButton.isSelected()) {
+        	distanceMethod = SearchEngine.DistanceMethod.Cosine;
+    	} else {
+    		distanceMethod = SearchEngine.DistanceMethod.Euclidean;
+    	}
+    	return distanceMethod;
+    }
+    
+    private void resetRelevantFeedbackCheckboxes() {
+    	for (JCheckBox checkbox : this.resultCheckboxes) {
+			checkbox.setSelected(false);
+		}
+    }
+    
+    private ArrayList<AudioData> getRelevantFeedbackItems() {
+    	ArrayList<AudioData> results = new ArrayList<>();
+    	for (int i = 0; i < this.resultCheckboxes.length; i++) {
+			if(!this.resultCheckboxes[i].isSelected())
+				continue;
+			results.add(this.resultItems.get(i));
+		}
+    	return results;
     }
     
     private void playQueryAudio() {
@@ -241,14 +309,23 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     private void playResultAudio(ActionEvent e) {
     	for (int i = 0; i < resultSize; i ++){
             if (e.getSource() == resultButton[i]){
-                String filePath = resultFiles.get(i).Path;
+                String filePath = resultItems.get(i).Path;
                 new SoundEffect(filePath).play();
                 break;
             }
         }
     }
     
+    private boolean isItemInResultList(ArrayList<AudioData> list, AudioData item) {
+    	for (AudioData audioData : list) {
+			if(audioData.Name.equals(item.Name))
+				return true;
+		}
+    	return false;
+    }
+    
     //initializer
+
     public static void main(String[] args) {
     	AudioSearchUI ui = new AudioSearchUI();
     	ui.start();
