@@ -296,7 +296,7 @@ public class FeatureExtractor {
 			String category = Utils.getCategoryFromFileName(file.getName());
 			if(categoryCount.get(category) != null) {
 				int count = categoryCount.get(category);
-				categoryCount.put(category, count++);
+				categoryCount.put(category, ++count);
 			} else {
 				categoryCount.put(category, 1);
 			}

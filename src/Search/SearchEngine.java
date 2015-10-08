@@ -55,27 +55,35 @@ public class SearchEngine {
     	AudioData queryAudioData = this.audioDataMap.get(query);
     	
     	for (String audioFileName : this.audioDataMap.keySet()) {
-    		this.audioDistanceMap.put(audioFileName, 0.0);
     		AudioData comparedAudioData = this.audioDataMap.get(audioFileName);
-			Double distance = this.audioDistanceMap.get(audioFileName);
+			double distance = 0.0;
 			for (AnalyzedFeature analyzedFeature : analyzedFeatures) {
 				switch (analyzedFeature) {
 				case Energy:
-					distance += calculateDistanceForArray(distanceMethod, comparedAudioData.Energy, queryAudioData.Energy);
+					double energyDistance = calculateDistanceForArray(distanceMethod, comparedAudioData.Energy, queryAudioData.Energy); 
+					distance += energyDistance;
+					System.out.println("Energy: " + energyDistance);
 					break;
 				case ZeroCrossing:
-					distance += calculateDistanceForNumber(distanceMethod, comparedAudioData.ZeroCrossing, queryAudioData.ZeroCrossing);
+					double zeroCrossingDistance = calculateDistanceForNumber(distanceMethod, comparedAudioData.ZeroCrossing, queryAudioData.ZeroCrossing); 
+					distance += zeroCrossingDistance;
+					System.out.println("Zero Crossing: " + zeroCrossingDistance);
 					break;
 				case MagnitudeSpectrum:
-					distance += calculateDistanceForArray(distanceMethod, comparedAudioData.MagnitudeSpectrum, queryAudioData.MagnitudeSpectrum);
+					double magnitudeSpectrumDistance = calculateDistanceForArray(distanceMethod, comparedAudioData.MagnitudeSpectrum, queryAudioData.MagnitudeSpectrum); 
+					distance += magnitudeSpectrumDistance;
+					System.out.println("Magnitude Spectrum: " + magnitudeSpectrumDistance);
 					break;
 				case MFCC:
-					distance += calculateDistanceForMatrix(distanceMethod, comparedAudioData.MFCC, queryAudioData.MFCC);
+					double mfccDistance = calculateDistanceForMatrix(distanceMethod, comparedAudioData.MFCC, queryAudioData.MFCC); 
+					distance += mfccDistance;
+					System.out.println("MFCC: " + mfccDistance);
 					break;
 				default:
 					break;
 				}
 			}
+			this.audioDistanceMap.put(audioFileName, distance);
 		}
 
     	//sort and return results
