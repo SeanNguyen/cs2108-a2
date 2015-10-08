@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Vector;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -16,7 +17,7 @@ import javax.swing.JPanel;
 
 import Player.AudioFilter;
 import Player.SoundEffect;
-import Search.SearchDemo;
+import Search.SearchEngine;
 
 public class AudioSearchUI extends JFrame implements ActionListener {
     //attributes
@@ -32,7 +33,7 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     String basePath = "./";
     ArrayList<String> resultFiles = new ArrayList<String>();
     
-    SearchDemo searchDemo = new SearchDemo();
+    SearchEngine searchDemo = new SearchEngine();
     
 	//UI Components
 	JPanel contentPane;
@@ -70,7 +71,10 @@ public class AudioSearchUI extends JFrame implements ActionListener {
             fileChooser.setSelectedFile(null);
 
         }else if (e.getSource() == searchButton){
-            resultFiles = searchDemo.resultList(queryAudioFile.getAbsolutePath());
+        	SearchEngine.DistanceMethod distanceMethod = SearchEngine.DistanceMethod.Cosine;
+        	Vector<SearchEngine.AnalyzedFeature> analyzedFeatures = new Vector<>();
+        	analyzedFeatures.addElement(SearchEngine.AnalyzedFeature.Energy);
+            resultFiles = searchDemo.retrieveResultList(queryAudioFile.getName(), distanceMethod, analyzedFeatures);
 
             for (int i = 0; i < resultFiles.size(); i ++){
                 resultLabels[i].setText(resultFiles.get(i));

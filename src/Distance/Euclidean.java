@@ -5,7 +5,7 @@ package Distance;
  */
 public class Euclidean {
 
-    public double getDistance(double[] query1, double[] query2){
+    public static double getDistance(double[] query1, double[] query2){
         /**
          * Please implement the distance/ similarity function by yourselves.
          */
