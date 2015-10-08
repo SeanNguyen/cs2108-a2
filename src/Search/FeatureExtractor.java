@@ -11,6 +11,7 @@ import Feature.MFCC;
 import Feature.MagnitudeSpectrum;
 import Feature.ZeroCrossing;
 import SignalProcess.WaveIO;
+import Tool.Utils;
 
 public class FeatureExtractor {
 	protected final static String featureDataPath = "data\\feature\\";
@@ -54,9 +55,9 @@ public class FeatureExtractor {
 	 * @return the map of training features, Key is the name of file, Value is
 	 *         the array/vector of features.
 	 */
-	public void readFeatureData(HashMap<String, AudioData> audioDataMap) {
+	public void readFeatureData(HashMap<String, AudioData> audioDataMap, HashMap<String, Integer> categoryCount) {
 		// prepare all the audioData instances
-		initializeAudioDataMap(audioDataMap);
+		initializeAudioDataMap(audioDataMap,categoryCount);
 
 		// read all the features
 		readMagnitudeSpectrum(audioDataMap);
@@ -274,13 +275,22 @@ public class FeatureExtractor {
 		}
 	}
 
-	private void initializeAudioDataMap(HashMap<String, AudioData> audioDataMap) {
+	private void initializeAudioDataMap(HashMap<String, AudioData> audioDataMap, HashMap<String, Integer> categoryCount) {
 		File trainFolder = new File(trainPath);
 		File[] audioFiles = trainFolder.listFiles();
 		for (File file : audioFiles) {
 			AudioData audioData = new AudioData();
 			audioData.Path = file.getAbsolutePath();
-			audioDataMap.put(file.getName(), new AudioData());
+			audioDataMap.put(file.getName(), audioData);
+			
+			//plus 1 to its category
+			String category = Utils.getCategoryFromFileName(file.getName());
+			if(categoryCount.get(category) != null) {
+				int count = categoryCount.get(category);
+				categoryCount.put(category, count++);
+			} else {
+				categoryCount.put(category, 1);
+			}
 		}
 	}
 }

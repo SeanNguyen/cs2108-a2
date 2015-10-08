@@ -2,9 +2,13 @@ package Search;
 
 import java.util.*;
 
+import com.sun.javafx.util.Utils;
+
 import Distance.CityBlock;
 import Distance.Cosine;
 import Distance.Euclidean;
+import Evaluation.Precision;
+import Evaluation.Recall;
 import Tool.SortHashMapByValue;
 
 /**
@@ -26,6 +30,7 @@ public class SearchEngine {
 	
     private HashMap<String, AudioData> audioDataMap = new HashMap<>();
     private HashMap<String, Double> audioDistanceMap = new HashMap<>(); 
+    private HashMap<String, Integer> categoryCount = new HashMap<>(); 
     private FeatureExtractor featureExtractor = new FeatureExtractor();
     
     
@@ -34,7 +39,7 @@ public class SearchEngine {
     	//Process all the audio files here
     	this.featureExtractor.calcuteFeatureData();
     	//then read them
-    	this.featureExtractor.readFeatureData(audioDataMap);
+    	this.featureExtractor.readFeatureData(audioDataMap, categoryCount);
     }
 
     //Public methods
@@ -76,6 +81,13 @@ public class SearchEngine {
     	//sort and return results
         SortHashMapByValue sortHM = new SortHashMapByValue(20);
         ArrayList<String> result = sortHM.sort(this.audioDistanceMap);
+        
+        //before return result, do some evaluations
+        System.out.println("=======EVALUATION============================");
+        System.out.println("Precision: " + Precision.analyze(query, result));
+        String category = Tool.Utils.getCategoryFromFileName(query);
+        System.out.println("Recall: " + Recall.analyze(query, result, this.categoryCount.get(category)));
+        
         return result;
     }
     

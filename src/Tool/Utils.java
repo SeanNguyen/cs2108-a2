@@ -19,6 +19,11 @@ public class Utils {
         }
         return ext;
     }
+    
+    public static String getCategoryFromFileName(String fileName) {
+    	String category = fileName.replaceAll("\\d","");
+    	return category;
+    }
 
     /** Returns an ImageIcon, or null if the path was invalid. */
     protected static ImageIcon createAudioIcon(String path) {
