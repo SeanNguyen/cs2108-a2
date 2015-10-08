@@ -168,6 +168,7 @@ public class FeatureExtractor {
 
 	private void readMagnitudeSpectrum(HashMap<String, AudioData> audioDataMap) {
 		try {
+			System.out.println("Reading Magnitude Spectrum Data");
 			FileReader fr = new FileReader(
 					FeatureExtractor.featureDataPath + FeatureExtractor.magnitudeSpectrumDataFile);
 			BufferedReader br = new BufferedReader(fr);
@@ -197,6 +198,7 @@ public class FeatureExtractor {
 
 	private void readEnergy(HashMap<String, AudioData> audioDataMap) {
 		try {
+			System.out.println("Reading Energy Data");
 			FileReader fr = new FileReader(FeatureExtractor.featureDataPath + FeatureExtractor.energyDataFile);
 			BufferedReader br = new BufferedReader(fr);
 
@@ -225,6 +227,7 @@ public class FeatureExtractor {
 
 	private void readMFCC(HashMap<String, AudioData> audioDataMap) {
 		try {
+			System.out.println("Reading MFCC Data");
 			FileReader fr = new FileReader(FeatureExtractor.featureDataPath + FeatureExtractor.mfccDataFile);
 			BufferedReader br = new BufferedReader(fr);
 
@@ -261,6 +264,7 @@ public class FeatureExtractor {
 
 	private void readZeroCrossing(HashMap<String, AudioData> audioDataMap) {
 		try {
+			System.out.println("Reading Zero Crossing Data");
 			FileReader fr = new FileReader(FeatureExtractor.featureDataPath + FeatureExtractor.zeroCrossingDataFile);
 			BufferedReader br = new BufferedReader(fr);
 
