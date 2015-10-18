@@ -4,7 +4,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Stream;
 
 import Feature.Energy;
 import Feature.MFCC;
@@ -16,6 +19,7 @@ import Tool.Utils;
 public class FeatureExtractor {
 	protected final static String featureDataPath = "data\\feature\\";
 	protected final static String trainPath = "data\\input\\train\\";
+	protected final static String queryPath = "data\\input\\test\\";   
 	protected final static String magnitudeSpectrumDataFile = "magnitudeSpectrum.txt";
 	protected final static String zeroCrossingDataFile = "zeroCrossing.txt";
 	protected final static String energyDataFile = "energy.txt";
@@ -34,22 +38,24 @@ public class FeatureExtractor {
 	 */
 	public void calcuteFeatureData() {
 		File trainFolder = new File(trainPath);
-		File[] audioFiles = trainFolder.listFiles();
+		File queryFolder = new File(queryPath);
+		File[] trainFiles = trainFolder.listFiles();
+		File[] queryFiles = queryFolder.listFiles();
+		File[] allFiles = Stream.concat(Arrays.stream(trainFiles), Arrays.stream(queryFiles))
+                .toArray(File[]::new);
 
-		// load all the audio files
-		short[][] audioSignals = getSignalFromAudioFiles(audioFiles);
 		// calculate data for all features
 		if(!Utils.isFileExist(featureDataPath + magnitudeSpectrumDataFile)) {
-			calculateMagnitudeSpectrum(audioFiles, audioSignals);
+			calculateMagnitudeSpectrum(allFiles);
 		}
 		if(!Utils.isFileExist(featureDataPath + zeroCrossingDataFile)) {
-			calculateZeroCrossing(audioFiles, audioSignals);
+			calculateZeroCrossing(allFiles);
 		}
 		if(!Utils.isFileExist(featureDataPath + energyDataFile)) {
-			calculateEnergy(audioFiles, audioSignals);
+			calculateEnergy(allFiles);
 		}
 		if(!Utils.isFileExist(featureDataPath + mfccDataFile)) {
-			calculateMFCC(audioFiles, audioSignals);
+			calculateMFCC(allFiles);
 		}
 	}
 
@@ -63,9 +69,10 @@ public class FeatureExtractor {
 	 * @return the map of training features, Key is the name of file, Value is
 	 *         the array/vector of features.
 	 */
-	public void readFeatureData(HashMap<String, AudioData> audioDataMap, HashMap<String, Integer> categoryCount) {
+	public void readFeatureData(HashMap<String, AudioData> audioDataMap, HashMap<String, Integer> categoryCount,
+	        List<String> trainFiles, List<String> queryFiles) {
 		// prepare all the audioData instances
-		initializeAudioDataMap(audioDataMap,categoryCount);
+		initializeAudioDataMap(audioDataMap,categoryCount,trainFiles,queryFiles);
 
 		// read all the features
 		readMagnitudeSpectrum(audioDataMap);
@@ -73,17 +80,34 @@ public class FeatureExtractor {
 		readEnergy(audioDataMap);
 		readMFCC(audioDataMap);
 	}
+	
+	public AudioData readFile(File query) {
+        AudioData audioData = new AudioData();
+        audioData.Path = query.getAbsolutePath();
+        audioData.Name = query.getName();
+        
+        short[] audioSignals = getSignalFromAudioFile(query);
+        audioData.Energy =  Energy.getFeature(audioSignals);
+        MagnitudeSpectrum ms = new MagnitudeSpectrum();
+        audioData.MagnitudeSpectrum = ms.getFeature(audioSignals);
+        audioData.ZeroCrossing = ZeroCrossing.getFeature(audioSignals);
+        MFCC mfcc = new MFCC();
+        audioData.MFCC = mfcc.process(audioSignals);
+        
+        return audioData;
+	}
 
 	// private helper methods
-	private void calculateMagnitudeSpectrum(File[] files, short[][] audioSignals) {
+	private void calculateMagnitudeSpectrum(File[] files) {
 		System.out.println("Processing Feature: Magnitude Spectrum");
 
 		try {
 			FileWriter fw = new FileWriter(
 					FeatureExtractor.featureDataPath + FeatureExtractor.magnitudeSpectrumDataFile);
-			for (int i = 0; i < audioSignals.length; i++) {
+			for (int i = 0; i < files.length; i++) {
 				MagnitudeSpectrum ms = new MagnitudeSpectrum();
-				double[] msFeature = ms.getFeature(audioSignals[i]);
+				short[] audioSignals = getSignalFromAudioFile(files[i]);
+				double[] msFeature = ms.getFeature(audioSignals);
 				String line = files[i].getName() + "\t";
 				for (double f : msFeature) {
 					line += f + "\t";
@@ -97,13 +121,14 @@ public class FeatureExtractor {
 		}
 	}
 
-	private void calculateZeroCrossing(File[] files, short[][] audioSignals) {
+	private void calculateZeroCrossing(File[] files) {
 		System.out.println("Processing Feature: Zero Crossing");
 
 		try {
 			FileWriter fw = new FileWriter(FeatureExtractor.featureDataPath + FeatureExtractor.zeroCrossingDataFile);
-			for (int i = 0; i < audioSignals.length; i++) {
-				double zeroCrossingResult = ZeroCrossing.getFeature(audioSignals[i]);
+			for (int i = 0; i < files.length; i++) {
+	             short[] audioSignals = getSignalFromAudioFile(files[i]);
+				double zeroCrossingResult = ZeroCrossing.getFeature(audioSignals);
 				String line = files[i].getName() + "\t" + zeroCrossingResult + "\t" + "\n";
 				fw.append(line);
 			}
@@ -113,13 +138,14 @@ public class FeatureExtractor {
 		}
 	}
 
-	private void calculateEnergy(File[] files, short[][] audioSignals) {
+	private void calculateEnergy(File[] files) {
 		System.out.println("Processing Feature: Energy");
 
 		try {
 			FileWriter fw = new FileWriter(FeatureExtractor.featureDataPath + FeatureExtractor.energyDataFile);
-			for (int i = 0; i < audioSignals.length; i++) {
-				double[] msFeature = Energy.getFeature(audioSignals[i]);
+			for (int i = 0; i < files.length; i++) {
+	            short[] audioSignals = getSignalFromAudioFile(files[i]);
+				double[] msFeature = Energy.getFeature(audioSignals);
 				String line = files[i].getName() + "\t";
 				for (double f : msFeature) {
 					line += f + "\t";
@@ -132,14 +158,15 @@ public class FeatureExtractor {
 		}
 	}
 
-	private void calculateMFCC(File[] files, short[][] audioSignals) {
+	private void calculateMFCC(File[] files) {
 		System.out.println("Processing Feature: MFCC");
 
 		try {
 			FileWriter fw = new FileWriter(FeatureExtractor.featureDataPath + FeatureExtractor.mfccDataFile);
-			for (int i = 0; i < audioSignals.length; i++) {
+			for (int i = 0; i < files.length; i++) {
 				MFCC mfcc = new MFCC();
-				double[][] mfccData = mfcc.process(audioSignals[i]);
+                short[] audioSignals = getSignalFromAudioFile(files[i]);
+				double[][] mfccData = mfcc.process(audioSignals);
 				String line = files[i].getName() + "\t" + mfccData.length + "\n";
 				for (double[] mfccDataRow : mfccData) {
 					for (double mfccDataEntry : mfccDataRow) {
@@ -156,14 +183,9 @@ public class FeatureExtractor {
 		}
 	}
 
-	private short[][] getSignalFromAudioFiles(File[] audioFiles) {
-		short[][] audioSignals = new short[audioFiles.length][];
-		for (int i = 0; i < audioFiles.length; i++) {
-			WaveIO waveIO = new WaveIO();
-			short[] signal = waveIO.readWave(audioFiles[i].getAbsolutePath());
-			audioSignals[i] = signal;
-		}
-		return audioSignals;
+	private short[] getSignalFromAudioFile(File audioFile) {
+		WaveIO waveIO = new WaveIO();
+		return waveIO.readWave(audioFile.getAbsolutePath());
 	}
 
 	private void readMagnitudeSpectrum(HashMap<String, AudioData> audioDataMap) {
@@ -185,6 +207,7 @@ public class FeatureExtractor {
 				}
 
 				String fileName = split[0];
+				System.out.println(fileName);
 				AudioData audioData = audioDataMap.get(fileName);
 				audioData.MagnitudeSpectrum = data;
 
@@ -287,7 +310,8 @@ public class FeatureExtractor {
 		}
 	}
 
-	private void initializeAudioDataMap(HashMap<String, AudioData> audioDataMap, HashMap<String, Integer> categoryCount) {
+	private void initializeAudioDataMap(HashMap<String, AudioData> audioDataMap, HashMap<String, Integer> categoryCount, 
+	        List<String> trainFiles, List<String> queryFiles) {
 		File trainFolder = new File(trainPath);
 		File[] audioFiles = trainFolder.listFiles();
 		for (File file : audioFiles) {
@@ -295,6 +319,7 @@ public class FeatureExtractor {
 			audioData.Path = file.getAbsolutePath();
 			audioData.Name = file.getName();
 			audioDataMap.put(file.getName(), audioData);
+			trainFiles.add(file.getName());
 			
 			//plus 1 to its category
 			String category = Utils.getCategoryFromFileName(file.getName());
@@ -304,6 +329,15 @@ public class FeatureExtractor {
 			} else {
 				categoryCount.put(category, 1);
 			}
-		}
-	}
+		}	
+        File queryFolder = new File(queryPath);
+        audioFiles = queryFolder.listFiles();
+        for (File file : audioFiles) {
+            AudioData audioData = new AudioData();
+            audioData.Path = file.getAbsolutePath();
+            audioData.Name = file.getName();
+            audioDataMap.put(file.getName(), audioData);
+            queryFiles.add(file.getName());
+        }
+    }
 }

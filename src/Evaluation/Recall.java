@@ -2,6 +2,7 @@ package Evaluation;
 
 import java.util.ArrayList;
 
+import Search.AudioData;
 import Tool.Utils;
 
 /**
@@ -9,15 +10,27 @@ import Tool.Utils;
  */
 public class Recall {
     //this will return of a string to print
-    public static String analyze(String queryItem, ArrayList<String> resultItems, int totalRelevantItem) {
+    public static String analyze(String queryItem, ArrayList<AudioData> resultItems, int totalRelevantItem) {
     	String correctCategory = Utils.getCategoryFromFileName(queryItem);
     	int correctItemCount = 0;
-    	for (String resultItem : resultItems) {
-    		String resultItemCategory = Utils.getCategoryFromFileName(resultItem);
+    	for (AudioData resultItem : resultItems) {
+    		String resultItemCategory = Utils.getCategoryFromFileName(resultItem.Name);
 			if(correctCategory.equals(resultItemCategory)) {
 				correctItemCount++;
 			}
 		}
     	return correctItemCount + "/" + totalRelevantItem;
+    }
+    
+    public static double analyzeDouble(String queryItem, ArrayList<AudioData> resultItems, int totalRelevantItem) {
+        String correctCategory = Utils.getCategoryFromFileName(queryItem);
+        double correctItemCount = 0;
+        for (AudioData resultItem : resultItems) {
+            String resultItemCategory = Utils.getCategoryFromFileName(resultItem.Name);
+            if(correctCategory.equals(resultItemCategory)) {
+                correctItemCount++;
+            }
+        }
+        return correctItemCount / totalRelevantItem;
     }
 }

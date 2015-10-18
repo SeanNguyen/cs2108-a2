@@ -7,8 +7,12 @@ import java.awt.GridLayout;
 import java.awt.LayoutManager;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Vector;
 
 import javax.swing.BorderFactory;
@@ -23,6 +27,10 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTextPane;
 
+import Evaluation.AveragePrecision;
+import Evaluation.Evaluation;
+import Evaluation.Precision;
+import Evaluation.Recall;
 import Player.AudioFilter;
 import Player.SoundEffect;
 import Search.AudioData;
@@ -38,7 +46,7 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     /**
      * If need, please replace the 'querySet' with specific path of test set of audio files in your PC.
      */
-    String querySet = "data/input/";
+    String querySet = "data/input/test/";
     /**
      * Please Replace the 'basePath' with specific path of train set of audio files in your PC.
      */
@@ -48,7 +56,7 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     
 	//UI Components
 	JPanel contentPane;
-    JButton openButton, searchButton, queryButton;
+    JButton openButton, searchButton, queryButton, reportButton;
     JFileChooser fileChooser;
     
     JRadioButton distanceCityBlockRadioButton;
@@ -79,6 +87,8 @@ public class AudioSearchUI extends JFrame implements ActionListener {
         	search();
         }else if (e.getSource() == queryButton){
         	playQueryAudio();
+        } else if (e.getSource() == reportButton){
+            generateReport();
         }else {
             playResultAudio(e);
         }
@@ -98,11 +108,16 @@ public class AudioSearchUI extends JFrame implements ActionListener {
         searchButton = new JButton("Search");
         searchButton.addActionListener(this);
 
+        //generate report button
+        reportButton = new JButton("Generate Report");
+        reportButton.addActionListener(this);
+        
         //add all of that to the query panel
         JPanel queryPanel = new JPanel();
         queryPanel.add(openButton);
         queryPanel.add(queryButton);
         queryPanel.add(searchButton);
+        queryPanel.add(reportButton);
         
         //option panel
         JLabel distanceOptionLabel = new JLabel("Distance Calculation Method: ");
@@ -207,13 +222,15 @@ public class AudioSearchUI extends JFrame implements ActionListener {
     	Vector<SearchEngine.AnalyzedFeature> analyzedFeatures = getQyeryAnalyzeFeatures();
         
     	//query
-    	resultItems = searchEngine.retrieveResultList(queryAudioFile.getName(), distanceMethod, analyzedFeatures);
+    	resultItems = searchEngine.retrieveResultList(queryAudioFile, distanceMethod, analyzedFeatures);
     	
     	//process relevant feedback if have
-    	ArrayList< ArrayList<AudioData> > additionalResults = getResultsFromFeedbackItems(relevantFeedbackItems, distanceMethod, analyzedFeatures);
+    	ArrayList< ArrayList<AudioData> > additionalResults = searchEngine.getResultsFromFeedbackItems(relevantFeedbackItems, distanceMethod, analyzedFeatures);
     	if(!additionalResults.isEmpty()) {
-			this.resultItems = getFinalResultFromFeedbackResult(relevantFeedbackItems, additionalResults);
+			this.resultItems = searchEngine.getFinalResultFromFeedbackResult(this.resultItems, relevantFeedbackItems, additionalResults);
     	}
+    	
+    	searchEngine.printEvaluation(queryAudioFile.getName(), resultItems);
 
         for (int i = 0; i < resultItems.size(); i ++){
             resultLabels[i].setText(i + 1 + ". " + resultItems.get(i).Name);
@@ -223,37 +240,27 @@ public class AudioSearchUI extends JFrame implements ActionListener {
         }
     }
     
-    private ArrayList<AudioData> getFinalResultFromFeedbackResult(ArrayList<AudioData> relevantFeedbackItems, 
-    		ArrayList< ArrayList<AudioData> > feedbackResults) {
-    	ArrayList<AudioData> combinedResults = new ArrayList<>();
-		//add all feed back to the result
-		for (AudioData feedbackItem : relevantFeedbackItems) {
-			combinedResults.add(feedbackItem);
-		}
-		
-		feedbackResults.add(this.resultItems);
-		int[] currentPickingPositions = new int[feedbackResults.size()]; 
-		int index = 0;
-		while(combinedResults.size() < this.resultSize) {
-			ArrayList<AudioData> chosenResultList = feedbackResults.get(index);
-			AudioData audioItem = chosenResultList.get(currentPickingPositions[index]);
-			if(!isItemInResultList(combinedResults, audioItem)) {
-				combinedResults.add(audioItem);
-			}
-			currentPickingPositions[index]++;
-			index = (index + 1) % feedbackResults.size();
-		}
-		return combinedResults;
-    }
-    
-    private ArrayList< ArrayList<AudioData> > getResultsFromFeedbackItems(ArrayList<AudioData> feedbackItems, 
-    		DistanceMethod distanceMethod, Vector<AnalyzedFeature> analyzedFeatures) {
-    	ArrayList< ArrayList<AudioData> > results = new ArrayList<>();
-    	for (AudioData relevantFeedbackItem : feedbackItems) {
-			ArrayList<AudioData> additionalResults = searchEngine.retrieveResultList(relevantFeedbackItem.Name, distanceMethod, analyzedFeatures);
-			results.add(additionalResults);
-		}
-    	return results;
+    private void generateReport() {
+        boolean feedback = false;
+        SearchEngine.DistanceMethod distanceMethod = getQueryDistanceMethod();
+        Vector<SearchEngine.AnalyzedFeature> analyzedFeatures = getQyeryAnalyzeFeatures();
+        Evaluation evaluation = searchEngine.evaluateFeatures(distanceMethod, analyzedFeatures, feedback);
+        
+        String reportFileName = feedback ? "feedback_" : "";
+        for (SearchEngine.AnalyzedFeature af: analyzedFeatures) {
+            reportFileName += af + "" + distanceMethod + "_";
+        }
+        
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("..\\reports\\" + reportFileName + ".csv"))) {
+            bw.write(String.format("Overall, %s\n", evaluation.getOverallAP()));
+            Map<String, Double> APs = evaluation.getAPForCategories();
+            for (String category: APs.keySet()) {
+                bw.write(String.format("%s, %s\n", category, APs.get(category)));
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     
     private Vector<SearchEngine.AnalyzedFeature> getQyeryAnalyzeFeatures() {
@@ -314,14 +321,6 @@ public class AudioSearchUI extends JFrame implements ActionListener {
                 break;
             }
         }
-    }
-    
-    private boolean isItemInResultList(ArrayList<AudioData> list, AudioData item) {
-    	for (AudioData audioData : list) {
-			if(audioData.Name.equals(item.Name))
-				return true;
-		}
-    	return false;
     }
     
     //initializer
